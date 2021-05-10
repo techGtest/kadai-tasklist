@@ -11,18 +11,20 @@ use App\Task;
 
 class TasksController extends Controller
 {
-    public function index() //一覧を表示
+    public function index()//一覧を表示
     {
-        $tasks = Task::all();
-        
+        if (\Auth::check()) {
+            $user = \Auth::user();
+            $tasks = $user->tasks()->paginate(10);
+        }
         return view('tasks.index', ['tasks'=>$tasks,]);
     }
 
     public function create() //入力フォームを表示
     {
-        $task = new Task;
-        
-        return view('tasks.create', ['task'=>$task,]);
+        if (\Auth::check()) {
+        return view('tasks.create');
+        }
     }
 
     public function store(Request $request) //投稿機能
@@ -32,12 +34,11 @@ class TasksController extends Controller
             'status' => 'required|max:10',
         ]);
         
-        $task = new Task;
-        $task->status = $request->status;
-        $task->content = $request->content;
-        $task->save();
-        
-        return redirect('/');
+        $tasks=$request->user()->tasks()->create([
+            'status' => $request->status,
+            'content' => $request->content,
+        ]);
+        return redirect('/tasks');
     }
 
     
@@ -45,7 +46,10 @@ class TasksController extends Controller
     {
         $task = Task::findOrFail($id);
         
-        return view('tasks.show', ['task'=>$task,]);
+        if (\Auth::id() === $task->user_id) {
+            return view('tasks.show', ['task'=>$task,]);
+        }
+        return redirect('/tasks');
     }
 
     
@@ -53,8 +57,9 @@ class TasksController extends Controller
     {
         $task = Task::findOrFail($id);
         
-        return view('tasks.edit', ['task'=>$task,]);
-        
+        if (\Auth::id() === $task->user_id) {
+            return view('tasks.edit', ['task'=>$task,]);
+        }
     }
 
    
@@ -70,15 +75,16 @@ class TasksController extends Controller
         $task->content = $request->content;
         $task->save();
         
-        return redirect('/');
+        return redirect('/tasks');
     }
 
     
     public function destroy($id) //削除機能
     {
         $task = Task::findOrFail($id);
-        $task->delete();
-        
-         return redirect('/');
+        if (\Auth::id() === $task->user_id) {
+            $task->delete();
+        }
+        return redirect('/tasks');
     }
 }
