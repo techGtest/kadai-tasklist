@@ -60,6 +60,7 @@ class TasksController extends Controller
         if (\Auth::id() === $task->user_id) {
             return view('tasks.edit', ['task'=>$task,]);
         }
+        return redirect('/tasks');
     }
 
    
